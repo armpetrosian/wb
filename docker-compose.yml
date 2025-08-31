@@ -1,0 +1,38 @@
+version: '2.2'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wb_app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+    links:
+      - db
+
+  db:
+    image: mysql:5.7
+    container_name: wb_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: wb_sync
+      MYSQL_USER: wb_user
+      MYSQL_PASSWORD: wb_pass
+    ports:
+      - "3307:3306"
+
+  nginx:
+    image: nginx:alpine
+    container_name: wb_nginx
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./:/var/www/html
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    links:
+      - app
