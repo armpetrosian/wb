@@ -35,12 +35,4 @@ return [
         ],
     ],
 
-    'wb' => [
-        'host' => env('WB_API_HOST', '109.73.206.144:6969'),
-        'key' => env('WB_API_KEY', ''),
-        'timeout' => 30,
-        'retry_attempts' => 3,
-        'retry_delay' => 5, // seconds
-    ],
-
 ];

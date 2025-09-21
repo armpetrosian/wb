@@ -1,8 +1,16 @@
 FROM php:8.2-fpm
 
-# Установка зависимостей и PHP-расширений
+# Установка системных зависимостей
 RUN apt-get update && apt-get install -y \
-    git curl libpng-dev libonig-dev libxml2-dev zip unzip default-mysql-client \
+    git \
+    curl \
+    zip \
+    unzip \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    default-mysql-client \
+    cron \
     && docker-php-ext-install pdo pdo_mysql mbstring exif pcntl bcmath gd \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
@@ -12,9 +20,11 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 # Рабочая директория
 WORKDIR /var/www/html
 
-# Копирование проекта и установка зависимостей
+# Копирование файлов проекта
 COPY . .
-RUN composer install --no-dev --optimize-autoloader
 
-# Запуск PHP-FPM
+# Установка PHP-зависимостей (без запуска artisan при билде)
+RUN composer install --no-dev --optimize-autoloader --no-scripts
+
+# Генерация оптимизаций Laravel (будет выполняться уже после запуска контейнера)
 CMD ["php-fpm"]
