@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Account;
 use App\Models\RawResponse;
 use App\Models\Sale;
 use App\Models\Order;
@@ -13,16 +14,19 @@ use Illuminate\Support\Carbon;
 class WbSyncService
 {
     protected WbApiClient $client;
+    protected ?Account $account = null;
+
     protected array $endpoints = [
-        'sales' => 'api/v1/supplier/sales',
-        'orders' => 'api/v1/supplier/orders',
-        'stocks' => 'api/v1/supplier/stocks',
-        'incomes' => 'api/v1/supplier/incomes',
+        'sales' => 'v1/supplier/sales',
+        'orders' => 'v1/supplier/orders',
+        'stocks' => 'v1/supplier/stocks',
+        'incomes' => 'v1/supplier/incomes',
     ];
 
     public function __construct(WbApiClient $client)
     {
         $this->client = $client;
+        $this->account = $client->getAccount();
     }
 
     public function sync(string $type, array $params = []): array
@@ -48,14 +52,17 @@ class WbSyncService
 
                 // Сохраняем сырой ответ
                 $rawResponse = RawResponse::create([
+                    'account_id' => $this->account?->id ?? null,
                     'endpoint' => $endpoint,
-                    'params' => $params,
-                    'response' => $response,
+                    'request_payload' => json_encode($params),
+                    'response_body' => json_encode($response),
+                    'http_status' => 200,
+                    'fetched_at' => now(),
                     'processed' => false
                 ]);
 
                 // Обрабатываем данные
-                $processed = $this->processResponse($type, $response);
+                $processed = $this->processResponse($type, $response, $this->account?->id);
                 $totalProcessed += $processed;
 
                 // Обновляем статус обработки
@@ -65,7 +72,6 @@ class WbSyncService
                 $hasMore = !empty($response['data']) && count($response['data']) === $limit;
                 $page++;
 
-                // Небольшая задержка, чтобы не перегружать API
                 if ($hasMore) {
                     sleep(1);
                 }
@@ -79,7 +85,7 @@ class WbSyncService
 
         } catch (\Exception $e) {
             Log::error("WB Sync failed for {$type}: " . $e->getMessage());
-            
+
             return [
                 'success' => false,
                 'processed' => $totalProcessed,
@@ -88,7 +94,7 @@ class WbSyncService
         }
     }
 
-    protected function processResponse(string $type, array $data): int
+    protected function processResponse(string $type, array $data, ?int $accountId): int
     {
         $items = $data['data'] ?? [];
         $processed = 0;
@@ -98,33 +104,70 @@ class WbSyncService
                 switch ($type) {
                     case 'sales':
                         Sale::updateOrCreate(
-                            ['sale_id' => $item['saleID'] ?? null],
-                            $item
+                            [
+                                'account_id' => $accountId,
+                                'sale_id' => $item['saleID'] ?? null
+                            ],
+                            array_merge($item, [
+                                'account_id' => $accountId,
+                                'date' => $item['date'] ?? now(),
+                                'amount' => $item['totalPrice'] ?? 0,
+                                'payload' => json_encode($item)
+                            ])
                         );
                         break;
                     case 'orders':
                         Order::updateOrCreate(
-                            ['odid' => $item['odid'] ?? null],
-                            $item
+                            [
+                                'account_id' => $accountId,
+                                'order_id' => $item['odid'] ?? null
+                            ],
+                            array_merge($item, [
+                                'account_id' => $accountId,
+                                'date' => $item['date'] ?? now(),
+                                'total' => $item['totalPrice'] ?? 0,
+                                'payload' => json_encode($item)
+                            ])
                         );
                         break;
                     case 'stocks':
+                        // Для остатков используем date как уникальный ключ
+                        $date = $item['date'] ?? now()->format('Y-m-d');
                         Stock::updateOrCreate(
-                            ['barcode' => $item['barcode'] ?? null],
-                            $item
+                            [
+                                'account_id' => $accountId,
+                                'date' => $date
+                            ],
+                            array_merge($item, [
+                                'account_id' => $accountId,
+                                'date' => $date,
+                                'quantity' => $item['quantity'] ?? 0,
+                                'payload' => json_encode($item)
+                            ])
                         );
                         break;
                     case 'incomes':
+                        // Для доходов используем date как уникальный ключ
+                        $date = $item['date'] ?? now()->format('Y-m-d');
                         Income::updateOrCreate(
-                            ['income_id' => $item['incomeId'] ?? null],
-                            $item
+                            [
+                                'account_id' => $accountId,
+                                'date' => $date
+                            ],
+                            array_merge($item, [
+                                'account_id' => $accountId,
+                                'date' => $date,
+                                'amount' => $item['totalPrice'] ?? 0,
+                                'payload' => json_encode($item)
+                            ])
                         );
                         break;
                 }
                 $processed++;
             } catch (\Exception $e) {
                 Log::error("Failed to process {$type} item: " . $e->getMessage(), [
-                    'item' => $item
+                    'item' => $item,
+                    'account_id' => $accountId
                 ]);
             }
         }

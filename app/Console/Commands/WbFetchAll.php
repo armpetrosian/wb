@@ -26,7 +26,7 @@ class WbFetchAll extends Command
         $endpoints = [
             'sales'   => ['dateFrom' => $dateFrom, 'dateTo' => $dateTo],
             'orders'  => ['dateFrom' => $dateFrom, 'dateTo' => $dateTo],
-            'stocks'  => [],
+            'stocks'  => ['dateFrom' => now()->format('Y-m-d')],
             'incomes' => ['dateFrom' => $dateFrom, 'dateTo' => $dateTo],
         ];
 

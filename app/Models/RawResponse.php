@@ -8,6 +8,7 @@ class RawResponse extends Model
 {
     protected $fillable =
         [
+            'account_id',
             'endpoint',
             'request_payload',
             'response_body',
