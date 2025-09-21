@@ -95,8 +95,8 @@ class WbUpdateDaily extends Command
             $token = $account->activeToken?->token_value ?? $defaultToken;
 
              if (!$token) {
-                 $this->error("❌ Аккаунт {$account->name} (ID: {$account->id}) не имеет активного токена");
-                 $this->line("   Создайте токен командой: php artisan token:create {$account->api_service_id} TOKEN_TYPE_ID ВАШ_ТОКЕН");
+                 $this->error("Аккаунт {$account->name} (ID: {$account->id}) не имеет активного токена");
+                 $this->line("Создайте токен командой: php artisan token:create {$account->api_service_id} TOKEN_TYPE_ID ВАШ_ТОКЕН");
                  return;
              }
 

@@ -99,7 +99,7 @@ class WbSyncAll extends Command
 
             // Проверяем, что у аккаунта есть активный токен
              if (!$account->activeToken) {
-                 $this->line("  ❌ Аккаунт {$account->name} не имеет активного токена");
+                 $this->line("Аккаунт {$account->name} не имеет активного токена");
                  return [
                      'success' => false,
                      'processed' => 0,
@@ -129,9 +129,9 @@ class WbSyncAll extends Command
 
                     if ($result['success']) {
                         $totalProcessed += $result['processed'];
-                        $this->line("  ✅ {$t}: {$result['processed']} записей");
+                        $this->line("{$t}: {$result['processed']} записей");
                     } else {
-                        $this->line("  ❌ {$t}: {$result['message']}");
+                        $this->line("{$t}: {$result['message']}");
                     }
                 }
 
@@ -144,9 +144,9 @@ class WbSyncAll extends Command
                 $result = $syncService->sync($type, $params);
 
                 if ($result['success']) {
-                    $this->line("  ✅ {$type}: {$result['processed']} записей");
+                    $this->line("{$type}: {$result['processed']} записей");
                 } else {
-                    $this->line("  ❌ {$type}: {$result['message']}");
+                    $this->line("{$type}: {$result['message']}");
                 }
 
                 return [

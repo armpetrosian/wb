@@ -123,8 +123,8 @@ class WbSync extends Command
         try {
             // Проверяем, что у аккаунта есть активный токен
              if (!$account->activeToken) {
-                 $this->error("❌ Аккаунт {$account->name} не имеет активного токена");
-                 $this->line("   Создайте токен командой: php artisan token:create {$account->api_service_id} TOKEN_TYPE_ID ВАШ_ТОКЕН");
+                 $this->error("Аккаунт {$account->name} не имеет активного токена");
+                 $this->line(" Создайте токен командой: php artisan token:create {$account->api_service_id} TOKEN_TYPE_ID ВАШ_ТОКЕН");
                  return;
              }
 
@@ -144,9 +144,9 @@ class WbSync extends Command
                     ]));
 
                     if ($result['success']) {
-                        $this->line("✓ {$t}: {$result['processed']} записей");
+                        $this->line("{$t}: {$result['processed']} записей");
                     } else {
-                        $this->error("✗ {$t}: {$result['message']}");
+                        $this->error("{$t}: {$result['message']}");
                     }
                 }
             } else {
@@ -157,14 +157,14 @@ class WbSync extends Command
                 $executionTime = round(microtime(true) - $startTime, 2);
 
                 if ($result['success']) {
-                    $this->info("✓ Успешно синхронизировано {$result['processed']} записей за {$executionTime} сек.");
+                    $this->info("Успешно синхронизировано {$result['processed']} записей за {$executionTime} сек.");
                 } else {
-                    $this->error("✗ Ошибка при синхронизации: {$result['message']}");
+                    $this->error("Ошибка при синхронизации: {$result['message']}");
                 }
             }
 
         } catch (\Exception $e) {
-            $this->error("✗ Ошибка при синхронизации аккаунта {$account->name}: " . $e->getMessage());
+            $this->error("Ошибка при синхронизации аккаунта {$account->name}: " . $e->getMessage());
         }
     }
 }
