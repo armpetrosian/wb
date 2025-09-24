@@ -52,10 +52,18 @@ class AppServiceProvider extends ServiceProvider
                     $this->app->bind(WbApiClient::class, function () use ($account) {
                         return new WbApiClient($account);
                     });
+                } else {
+                    // Если таблица есть, но активных аккаунтов нет, используем ключ из .env
+                    $this->app->bind(WbApiClient::class, function () {
+                        return new WbApiClient(null, env('WB_API_KEY'));
+                    });
                 }
             }
         } catch (\Exception $e) {
-            // Игнорируем ошибки БД при boot
+            // В случае ошибки БД используем ключ из .env
+            $this->app->bind(WbApiClient::class, function () {
+                return new WbApiClient(null, env('WB_API_KEY'));
+            });
         }
     }
 

@@ -225,7 +225,8 @@ class WbProcessRaw extends Command
                             'sku' => $sku
                         ],
                         [
-                            'date' => $item['date'] ?? $item['last_change_date'] ?? now(),
+                            'account_id' => $accountId,
+                            'date' => $item['date'] ?? $item['last_change_date'] ?? now()->format('Y-m-d'),
                             'quantity' => $item['quantity'] ?? $item['quantity_full'] ?? 0,
                             'payload' => json_encode($item),
                         ]

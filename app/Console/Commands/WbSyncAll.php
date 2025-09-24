@@ -10,12 +10,13 @@ class WbSyncAll extends Command
 {
     protected $signature = 'wb:sync-all
                         {type : Тип данных для синхронизации (sales, orders, stocks, incomes, all)}
+                        {--account_id= : ID конкретного аккаунта (по умолчанию все активные)}
                         {--dateFrom= : Начальная дата в формате YYYY-MM-DD}
                         {--dateTo= : Конечная дата в формате YYYY-MM-DD (по умолчанию сегодня)}
                         {--limit=1000 : Количество записей на странице}
                         {--force : Принудительная синхронизация, даже если данные уже есть}';
 
-    protected $description = 'Синхронизация всех активных аккаунтов с API Wildberries';
+    protected $description = 'Синхронизация аккаунтов с API Wildberries';
 
     public function handle()
     {
@@ -32,12 +33,23 @@ class WbSyncAll extends Command
         $limit = (int)$this->option('limit');
 
         try {
-            // Получаем все активные аккаунты
-            $accounts = Account::where('is_active', true)->get();
-
-            if ($accounts->isEmpty()) {
-                $this->error('Нет активных аккаунтов для синхронизации');
-                return 1;
+            // Получаем аккаунты для синхронизации
+            $accountId = $this->option('account_id');
+            
+            if ($accountId) {
+                $accounts = Account::where('id', $accountId)->where('is_active', true)->get();
+                
+                if ($accounts->isEmpty()) {
+                    $this->error("Аккаунт с ID {$accountId} не найден или не активен");
+                    return 1;
+                }
+            } else {
+                $accounts = Account::where('is_active', true)->get();
+                
+                if ($accounts->isEmpty()) {
+                    $this->error('Нет активных аккаунтов для синхронизации');
+                    return 1;
+                }
             }
 
             $this->info("НАЧАЛО СИНХРОНИЗАЦИИ ВСЕХ АККАУНТОВ");
@@ -108,15 +120,15 @@ class WbSyncAll extends Command
                  ];
              }
 
-            // Создаем клиент для аккаунта
-            $client = new \App\Services\WbApiClient($account);
+            // Создаем клиент для аккаунта через фабрику
+            $client = (new \App\Services\WbApiClientFactory())->make($account);
 
             // Создаем сервис с клиентом для аккаунта
             $syncService = new \App\Services\WbSyncService($client);
 
             $params = [
-                'dateFrom' => $dateFrom->toDateTimeLocalString(),
-                'dateTo' => $dateTo->toDateTimeLocalString(),
+                'dateFrom' => $dateFrom->format('Y-m-d'),
+                'dateTo' => $dateTo->format('Y-m-d'),
                 'limit' => $limit,
             ];
 

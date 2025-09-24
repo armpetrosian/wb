@@ -60,7 +60,7 @@ class WbFetchSales extends Command
 
             $this->info("Получение продаж для аккаунта {$account->name} за период с {$dateFrom} по {$dateTo}");
 
-            $sales = $client->getSalesReport($dateFrom, $dateTo);
+            $sales = $client->getSales($dateFrom, $dateTo);
 
             if (empty($sales)) {
                 $this->info('Нет новых данных для загрузки');
@@ -73,9 +73,11 @@ class WbFetchSales extends Command
             foreach ($sales as $saleData) {
                 try {
                     $this->saleRepository->updateOrCreateSale($accountId, [
-                        'sale_id' => $saleData['saleID'] ?? null,
+                        'account_id' => $accountId,
+                        'sale_id' => $saleData['sale_id'] ?? null,
                         'date' => $saleData['date'] ?? null,
-                        'data' => $saleData,
+                        'amount' => $saleData['total_price'] ?? 0,
+                        'payload' => $saleData,
                     ]);
 
                     $bar->advance();

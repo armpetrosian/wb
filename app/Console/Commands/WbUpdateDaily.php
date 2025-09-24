@@ -100,23 +100,8 @@ class WbUpdateDaily extends Command
                  return;
              }
 
-            // Создаем клиент для аккаунта
-            $client = new WbApiClient($account, $token);
-
-            // Устанавливаем базовый URL
-            $reflection = new \ReflectionClass($client);
-            $property = $reflection->getProperty('http');
-            $property->setAccessible(true);
-
-            $property->setValue($client, new \GuzzleHttp\Client([
-                'base_uri' => rtrim($baseUrl, '/') . '/',
-                'timeout' => 30,
-                'http_errors' => false,
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $token,
-                    'Accept' => 'application/json',
-                ],
-            ]));
+            // Создаем клиент для аккаунта через фабрику
+            $client = (new \App\Services\WbApiClientFactory())->make($account);
 
             $this->info("Обновление данных для аккаунта: {$account->name}");
 

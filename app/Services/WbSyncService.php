@@ -17,10 +17,10 @@ class WbSyncService
     protected ?Account $account = null;
 
     protected array $endpoints = [
-        'sales' => 'v1/supplier/sales',
-        'orders' => 'v1/supplier/orders',
-        'stocks' => 'v1/supplier/stocks',
-        'incomes' => 'v1/supplier/incomes',
+        'sales' => 'sales',
+        'orders' => 'orders',
+        'stocks' => 'stocks',
+        'incomes' => 'incomes',
     ];
 
     public function __construct(WbApiClient $client)
@@ -42,40 +42,35 @@ class WbSyncService
         $hasMore = true;
 
         try {
-            while ($hasMore) {
-                $response = $this->client->get($endpoint, array_merge($params, [
-                    'dateFrom' => $params['dateFrom'] ?? now()->subDay()->toIso8601String(),
-                    'dateTo' => $params['dateTo'] ?? now()->toIso8601String(),
-                    'page' => $page,
-                    'limit' => $limit
-                ]));
+            // Получаем данные через соответствующий метод клиента
+            $dateFrom = $params['dateFrom'] ?? now()->subDay()->format('Y-m-d');
+            $dateTo = $params['dateTo'] ?? now()->format('Y-m-d');
+            
+            $response = match($type) {
+                'sales' => $this->client->getSales($dateFrom, $dateTo, $params),
+                'orders' => $this->client->getOrders($dateFrom, $dateTo, $params),
+                'stocks' => $this->client->getStocks($dateFrom, $params),
+                'incomes' => $this->client->getIncomes($dateFrom, $dateTo, $params),
+                default => []
+            };
 
-                // Сохраняем сырой ответ
-                $rawResponse = RawResponse::create([
-                    'account_id' => $this->account?->id ?? null,
-                    'endpoint' => $endpoint,
-                    'request_payload' => json_encode($params),
-                    'response_body' => json_encode($response),
-                    'http_status' => 200,
-                    'fetched_at' => now(),
-                    'processed' => false
-                ]);
+            // Сохраняем сырой ответ
+            $rawResponse = RawResponse::create([
+                'account_id' => $this->account?->id ?? null,
+                'endpoint' => $endpoint,
+                'request_payload' => json_encode($params),
+                'response_body' => json_encode($response),
+                'http_status' => 200,
+                'fetched_at' => now(),
+                'processed' => false
+            ]);
 
-                // Обрабатываем данные
-                $processed = $this->processResponse($type, $response, $this->account?->id);
-                $totalProcessed += $processed;
+            // Обрабатываем данные
+            $processed = $this->processResponse($type, $response, $this->account?->id);
+            $totalProcessed += $processed;
 
-                // Обновляем статус обработки
-                $rawResponse->update(['processed' => true]);
-
-                // Проверяем, есть ли еще данные
-                $hasMore = !empty($response['data']) && count($response['data']) === $limit;
-                $page++;
-
-                if ($hasMore) {
-                    sleep(1);
-                }
-            }
+            // Обновляем статус обработки
+            $rawResponse->update(['processed' => true]);
 
             return [
                 'success' => true,
@@ -96,7 +91,7 @@ class WbSyncService
 
     protected function processResponse(string $type, array $data, ?int $accountId): int
     {
-        $items = $data['data'] ?? [];
+        $items = $data;
         $processed = 0;
 
         foreach ($items as $item) {
@@ -106,7 +101,7 @@ class WbSyncService
                         Sale::updateOrCreate(
                             [
                                 'account_id' => $accountId,
-                                'sale_id' => $item['saleID'] ?? null
+                                'sale_id' => $item['sale_id'] ?? null
                             ],
                             array_merge($item, [
                                 'account_id' => $accountId,
