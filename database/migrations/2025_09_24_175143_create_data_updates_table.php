@@ -11,17 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('sales', function (Blueprint $table) {
+        Schema::create('data_updates', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('account_id');
-            $table->string('sale_id');
-            $table->date('date');
-            $table->decimal('amount', 15, 2)->nullable();
-            $table->json('payload')->nullable();
+            $table->string('data_type'); // 'sales', 'orders', 'stocks', 'incomes'
+            $table->timestamp('last_updated_at');
             $table->timestamps();
 
             $table->foreign('account_id')->references('id')->on('accounts')->onDelete('cascade');
-            $table->unique(['account_id', 'sale_id']);
+            $table->unique(['account_id', 'data_type']);
         });
     }
 
@@ -30,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('sales');
+        Schema::dropIfExists('data_updates');
     }
 };

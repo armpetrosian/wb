@@ -377,5 +377,8 @@ class WbApiClient
             }
 
         } while ($shouldRetry && $attempt <= $this->maxRetries);
+        
+        // Если дошли сюда, значит все попытки исчерпаны
+        throw new \RuntimeException("Все попытки запроса исчерпаны для endpoint: {$endpoint}");
     }
 }

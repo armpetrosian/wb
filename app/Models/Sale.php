@@ -11,11 +11,13 @@ class Sale extends Model
         'account_id',
         'sale_id',
         'date',
+        'amount',
+        'payload',
     ];
 
     protected $casts = [
         'date' => 'date',
-        'data' => 'array',
+        'payload' => 'array',
     ];
 
     public function account()

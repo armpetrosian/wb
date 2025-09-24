@@ -9,12 +9,15 @@ class Stock extends Model
 {
     protected $fillable = [
         'account_id',
+        'sku',
         'nm_id',
         'warehouse_id',
         'quantity',
         'in_way_to_client',
         'in_way_from_client',
+        'date',
         'data',
+        'payload',
     ];
 
     protected $casts = [
